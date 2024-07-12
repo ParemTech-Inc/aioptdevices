@@ -1,4 +1,7 @@
-""" Library for communicating with PTDevices """
+"""Library for communicating with PTDevices."""
 
-from .interface import Interface  # noqa
-from .errors import *  # noqa
+# flake8: noqa
+
+from .configuration import Configuration
+from .errors import *
+from .interface import Interface

@@ -1,11 +1,10 @@
-"""Python Library for communicating with PTDevices"""
+"""Python Library for communicating with PTDevices."""
 
+from http import HTTPStatus
 import logging
 from typing import Any, TypedDict
 
 from aiohttp import client_exceptions
-from http import HTTPStatus
-
 import orjson
 
 from aioptdevices.errors import (
@@ -20,32 +19,33 @@ LOGGER = logging.getLogger(__name__)
 
 
 class PTDevicesResponse(TypedDict, total=False):
-    """Typed Response from PTDevices"""
+    """Typed Response from PTDevices."""
 
     body: dict[str, Any]
     code: int
 
 
 class Interface:
-    """Interface for PTDevices"""
+    """Interface for PTDevices."""
 
     def __init__(self, config: Configuration) -> None:
-        """Connection Session Setup"""
+        """Initilize object variables."""
         self.config = config
 
     async def get_data(self) -> PTDevicesResponse:
-        """Fetch device data from PTDevices server and format it"""
+        """Fetch device data from PTDevices server and format it."""
         # Request url: https://api.ptdevices.com/token/v1/device/{deviceId}?api_token={given_token}
         # Where
-        #   {deviceId} is the numeric internal device id, found in the url https://www.ptdevices.com/device/level/{deviceId}
+        #   {deviceId} is the numeric internal device id,
+        #       found in the url https://www.ptdevices.com/device/level/{deviceId}
         #   {given_token} is the access token you were given
 
-        url = (
-            f"{self.config.url}{self.config.deviceId}?api_token={self.config.authToken}"
-        )
+        url = f"{self.config.url}{self.config.device_id}?api_token={self.config.auth_token}"
 
         LOGGER.debug(
-            f"Sending request to {self.config.url} for data from device #{self.config.deviceId}"
+            "Sending request to %s for data from device #%s",
+            self.config.url,
+            self.config.device_id,
         )
 
         try:
@@ -54,7 +54,7 @@ class Interface:
                 url,
             ) as results:
                 LOGGER.debug(
-                    f"{results.status} Received from {self.config.url}, {results}"
+                    "%s Received from %s, %s", results.status, self.config.url, results
                 )
 
                 # Check return code
@@ -65,7 +65,7 @@ class Interface:
 
                 if results.status == HTTPStatus.FORBIDDEN:
                     raise PTDevicesForbiddenError(
-                        f"Request to {url} failed, the token provided is not valid for device {self.config.deviceId}"
+                        f"Request to {url} failed, token invalid for device {self.config.device_id}"
                     )
 
                 if results.status != HTTPStatus.OK:
@@ -92,7 +92,4 @@ class Interface:
                 )
 
         except client_exceptions.ClientError as error:
-            raise PTDevicesRequestError(f"Request to {url} failed: {error}")
-
-
-# http://api.ptdevices.com/token/v1/device/{deviceId}?api_token={given_token}
+            raise PTDevicesRequestError(f"Request to {url} failed: {error}") from error

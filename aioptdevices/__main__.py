@@ -1,15 +1,15 @@
-""" CLI for PTDevices """
-
-import aioptdevices
+"""CLI for PTDevices."""
 
 import argparse
-import logging
 import asyncio
-from aiohttp import ClientSession, CookieJar
 from asyncio.timeouts import timeout
-from time import sleep
-from aioptdevices.interface import Interface
+import logging
+
+from aiohttp import ClientSession, CookieJar
+
+import aioptdevices
 from aioptdevices.configuration import Configuration
+from aioptdevices.interface import Interface
 
 LOGGER = logging.getLogger(__name__)
 
@@ -17,23 +17,24 @@ LOGGER = logging.getLogger(__name__)
 async def connect(
     deviceID: str, authToken: str, url: str, webSession: ClientSession
 ) -> Interface | None:
-    """Setup and Connect to PTDevices"""
+    """Set up and Connect to PTDevices."""
 
     # Setup interface to PTDevices
     interface = Interface(Configuration(authToken, deviceID, url, webSession))
     try:
         async with timeout(10):
             data = await interface.get_data()
-            LOGGER.info(f"Data: {data['body']}")
-        return interface
+            LOGGER.info("Data: %s", data.get("body"))
     except aioptdevices.PTDevicesRequestError as err:
-        LOGGER.warning(f"failed to connect to PTDevices server: {err}")
+        LOGGER.warning("failed to connect to PTDevices server: %s", err)
 
     except aioptdevices.PTDevicesUnauthorizedError as err:
-        LOGGER.warning(f"Unable, to read device data because of bad token: {err}")
+        LOGGER.warning("Unable, to read device data because of bad token: %s", err)
 
     except aioptdevices.PTDevicesForbiddenError as err:
-        LOGGER.warning(f"Unable, device does not belong to the token holder: {err}")
+        LOGGER.warning("Unable, device does not belong to the token holder: %s", err)
+    else:
+        return interface
     return None
 
 
@@ -42,8 +43,12 @@ async def main(
     authToken: str,
     url: str,
 ) -> None:
+    """Configure a connection and get the token api data from server."""
+
+    # ----------  Connecting To PTDevices  -----------
+
     LOGGER.info(
-        "\n" + "  Connecting To PTDevices  ".center(48, "-") + "\n"
+        "\n%s\n", "  Connecting To PTDevices  ".center(48, "-")
     )  # Output a section title for connecting
 
     # Create a web session for use when connecting
@@ -56,13 +61,14 @@ async def main(
     if not ptdevicesInterface:  # Failed connection to PTDevices
         LOGGER.error("Failed to connect to PTDevices")
         await session.close()
-        return False
+        return
 
-    # Successful connection
+    # -----------------  Connected  ------------------
+
     LOGGER.info(
-        "\n" + "  Connected  ".center(48, "-") + "\n"
+        "\n%s\n", "  Connected  ".center(48, "-")
     )  # Output a section title when connected
-    LOGGER.info(f"Successfully connected to {deviceID}")
+    LOGGER.info("Successfully connected to %s", deviceID)
 
     # try:
     #     data = await ptdevicesInterface.get_data()
@@ -77,7 +83,7 @@ async def main(
     #     LOGGER.warning(f"Unable, device does not belong to the token holder: {err}")
 
     await session.close()
-    return True
+    return
 
 
 if __name__ == "__main__":
@@ -103,31 +109,23 @@ if __name__ == "__main__":
     #     f"deviceID: {args.deviceID}\nToken: {args.authToken}\nurl: {args.url}\ndebug: {args.debug}\n"
     # )
 
-    LOGGER.info(
-        "\n" + "  ARGS  ".center(48, "-") + "\n"
-    )  # Output a section title for args
+    # --------------------  ARGS  --------------------
 
-    LOGGER.info(
-        f"deviceID: {args.deviceID}\n"
-        f"Token: {args.authToken}\n"
-        f"url: {args.url}\n"
-        f"debug: {args.debug}\n"
-    )
+    LOGGER.info("\n%s\n", "  ARGS  ".center(48, "-"))  # Output a section title for args
+    LOGGER.info("deviceID: %s", args.deviceID)
+    LOGGER.info("Token: %s", args.authToken)
+    LOGGER.info("url: %s", args.url)
+    LOGGER.info("debug: %s", args.debug)
 
     # Run the program
     try:
-        for i in range(20):
-            ret = asyncio.run(
-                main(
-                    deviceID=args.deviceID,
-                    authToken=args.authToken,
-                    url=args.url,
-                )
+        ret = asyncio.run(
+            main(
+                deviceID=args.deviceID,
+                authToken=args.authToken,
+                url=args.url,
             )
-            if not ret:
-                LOGGER.error(f"failed at loop {i} / 20")
-                break
-            sleep(0.5)
+        )
 
     except KeyboardInterrupt:
         LOGGER.info("Keyboard interrupt")
