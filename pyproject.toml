@@ -1,0 +1,82 @@
+[build-system]
+requires = ['setuptools>=65.4.1', 'wheel', 'Cython>=3.0.2']
+
+[project]
+name = "aioptdevices"
+authors = [{name = "Matthew Gibson", email = "matthew.gibzon@gmail.com"},]
+version = "2024.7.1"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "aiohttp>3.9",
+    "orjson>3.9",
+]
+classifiers=[
+    "Programming Language :: Python :: 3",
+    "LICENSE :: OSI APPROVED :: GNU GENERAL PUBLIC LICENSE V3 (GPLV3)",
+    "Operating System :: OS Independent",
+
+]
+
+[project.optional-dependencies]
+requirements = [
+    "aiohttp>3.9",
+    "orjson>3.9",
+    "pytest"
+]
+
+requirements_test = [
+    "aioresponses==0.7.6",
+    "mypy==1.10.1",
+    "pytest==8.2.2",
+    "pytest-aiohttp==1.0.5",
+    "pytest-asyncio==0.23.7",
+    "pytest-cov==5.0.0",
+    "ruff==0.5.1",
+    "trustme==1.1.0",
+    "types-orjson==3.6.2",
+]
+
+[project.scripts]
+aioptdevices = "aioptdevices.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["aioptdevices*"]
+
+[tool.setuptools.package-data]
+"aioptdevices" = ["py.typed"]
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+
+[tool.black]
+target-version = ['py39']
+
+[tool.pylint.MASTER]
+reports = 'no'
+ignore = [
+    "api_pb2.py",
+    "api_options_pb2.py"
+]
+disable = [
+  "missing-docstring",
+  "too-few-public-methods",
+  "too-many-instance-attributes",
+  "wildcard-import",
+  "invalid-name",
+  "too-many-arguments",
+  "line-too-long",
+  "protected-access",
+  "unused-wildcard-import",
+  "import-outside-toplevel",
+  "raise-missing-from",
+  "bad-mcs-classmethod-argument",
+  "duplicate-code",
+  "too-many-lines",
+]
+
+[tool.ruff]
+ignore = [
+  "E721", # We want type() check for protobuf messages
+]
