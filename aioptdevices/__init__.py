@@ -4,4 +4,4 @@
 
 from .configuration import Configuration
 from .errors import *
-from .interface import Interface
+from .interface import Interface, PTDevicesResponse
