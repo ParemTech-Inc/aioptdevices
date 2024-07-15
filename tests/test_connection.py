@@ -147,13 +147,13 @@ def test_real_server():
     with loop_context() as loop:
         # Setup the test server
 
-        async def test_errors():
+        async def test_real_server():
             session: ClientSession = ClientSession(cookie_jar=CookieJar(unsafe=True))
             interface: Interface = Interface(
                 Configuration(
                     auth_token=secret_TOKEN,
                     device_id=secret_DEVICE_ID,
-                    url="http://api.ptdevices.com/token/v1/device/",
+                    url="http://www.ptdevices.com/token/v1/device/",
                     session=session,
                 )
             )
@@ -163,7 +163,7 @@ def test_real_server():
             assert "device_id" in data
             await session.close()
 
-        loop.run_until_complete(test_errors())
+        loop.run_until_complete(test_real_server())
 
 
 # interface: Interface = Interface(normal_config)

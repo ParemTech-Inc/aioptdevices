@@ -44,7 +44,7 @@ testpaths = ["./tests"]
 
 
 [project.scripts]
-aioptdevices = "aioptdevices.__main__:main"
+aioptdevices = "aioptdevices.__main__:starter"
 
 [tool.setuptools.packages.find]
 include = ["aioptdevices*"]
