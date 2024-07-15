@@ -73,3 +73,6 @@ venv.bak/
 
 #Jetbrains
 .idea
+
+# Secrets
+tests/secret.py

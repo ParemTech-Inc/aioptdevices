@@ -35,6 +35,14 @@ requirements_test = [
     "types-orjson==3.6.2",
 ]
 
+[tool.pytest.ini_options]
+addopts = "--cov=aioptdevices --cov-report term-missing"
+asyncio_mode = "auto"
+filterwarnings = ["ignore:.*The object should be created within an async function.*:DeprecationWarning:aiohttp"]
+testpaths = ["./tests"]
+
+
+
 [project.scripts]
 aioptdevices = "aioptdevices.__main__:main"
 
