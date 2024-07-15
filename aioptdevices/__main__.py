@@ -122,7 +122,7 @@ def starter():
 
     # Run the program
     try:
-        ret = asyncio.run(
+        asyncio.run(
             main(
                 deviceID=args.deviceID,
                 authToken=args.authToken,
