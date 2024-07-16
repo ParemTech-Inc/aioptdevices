@@ -22,7 +22,7 @@
   <summary>Table of Contents</summary>
   <ol>
     <li>
-      <a href="#about-the-project">About This Project</a>
+      <a href="#about-this-project">About This Project</a>
     </li>
     <li>
       <a href="#getting-started">Getting Started</a>
