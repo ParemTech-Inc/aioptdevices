@@ -20,7 +20,9 @@ async def connect(
     """Set up and Connect to PTDevices."""
 
     # Setup interface to PTDevices
-    interface = Interface(Configuration(authToken, deviceID, url, webSession))
+    interface: Interface = Interface(
+        Configuration(authToken, deviceID, url, webSession)
+    )
     try:
         async with timeout(10):
             data = await interface.get_data()
@@ -52,7 +54,7 @@ async def main(
     )  # Output a section title for connecting
 
     # Create a web session for use when connecting
-    session = ClientSession(cookie_jar=CookieJar(unsafe=True))
+    session: ClientSession = ClientSession(cookie_jar=CookieJar(unsafe=True))
     # session = ClientSession()
 
     # Setup connection to PTDevices
@@ -86,8 +88,9 @@ async def main(
     return
 
 
-if __name__ == "__main__":
-    default_url = "https://api.ptdevices.com/token/v1/device/"
+def starter():
+    """Parse CLI Arguments and fetch device data."""
+    default_url = "https://www.ptdevices.com/token/v1/device/"
 
     # Parse cli args
     parser = argparse.ArgumentParser()
@@ -119,7 +122,7 @@ if __name__ == "__main__":
 
     # Run the program
     try:
-        ret = asyncio.run(
+        asyncio.run(
             main(
                 deviceID=args.deviceID,
                 authToken=args.authToken,
@@ -129,4 +132,8 @@ if __name__ == "__main__":
 
     except KeyboardInterrupt:
         LOGGER.info("Keyboard interrupt")
+
+
+if __name__ == "__main__":
+    starter()
 # ----------------------  ARGS  ------------------

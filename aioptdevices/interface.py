@@ -58,17 +58,17 @@ class Interface:
                 )
 
                 # Check return code
-                if results.status == HTTPStatus.UNAUTHORIZED:
+                if results.status == HTTPStatus.UNAUTHORIZED:  # 401
                     raise PTDevicesUnauthorizedError(
                         f"Request to {url} failed, the token provided is not valid"
                     )
 
-                if results.status == HTTPStatus.FORBIDDEN:
+                if results.status == HTTPStatus.FORBIDDEN:  # 403
                     raise PTDevicesForbiddenError(
                         f"Request to {url} failed, token invalid for device {self.config.device_id}"
                     )
 
-                if results.status != HTTPStatus.OK:
+                if results.status != HTTPStatus.OK:  # anything but 200
                     raise PTDevicesRequestError(
                         f"Request to {url} failed, got unexpected response from server ({results.status})"
                     )
