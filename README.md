@@ -164,8 +164,8 @@ Project Link: [https://github.com/ParemTech-Inc/aioptdevices](https://github.com
 <!-- ACKNOWLEDGMENTS -->
 ## Acknowledgments
 
-* Othneil Drew ([@othneildrew](https://github.com/othneildrew)) creator the Best-README-Template](https://github.com/othneildrew/Best-README-Template)
-* Robert Svensson ([@Kane610](https://github.com/Kane610)) creator of the aiounifi package](https://github.com/Kane610/aiounifi)
+* Othneil Drew ([@othneildrew](https://github.com/othneildrew)) creator the [Best-README-Template](https://github.com/othneildrew/Best-README-Template)
+* Robert Svensson ([@Kane610](https://github.com/Kane610)) creator of the [aiounifi package](https://github.com/Kane610/aiounifi)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
