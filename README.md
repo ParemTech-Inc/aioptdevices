@@ -44,7 +44,7 @@
 <!-- ABOUT THE PROJECT -->
 ## About This Project
 
-This package allows polling of the PTDevices servers for device data via the token API. See [Token API Docs](https://support.paremtech.com/portal/en/kb/articles/api-options#Token_API). It was developed for use in the PTDevices Home Assistant Integration, but can be used for other projects too. It offers both a command line tool and a library.
+This package allows polling the PTDevices servers for device data via the token API. See [Token API Docs](https://support.paremtech.com/portal/en/kb/articles/api-options#Token_API). It was developed for use in the PTDevices Home Assistant Integration but can be used for other projects. It offers both a command line tool and a library.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -96,7 +96,7 @@ python3 -m pip install aioptdevices
 <!-- USAGE EXAMPLES -->
 ## Usage
 ### As a Command Line Tool
-Make sure to setup and activate the venv or install the package globally before trying to use it, refer to [Manual setup step 2](#manual-setup). If you installed the package from PyPi, you can go straight to [Command usage](#command-usage).
+Make sure to set up and activate the venv or install the package globally before trying to use it, refer to [Manual setup step 2](#manual-setup). If you installed the package from PyPi, you can go straight to [Command usage](#command-usage).
 
 #### Command usage
 
@@ -121,7 +121,7 @@ See the [examples](examples) folder for usage as a library.
 <!-- CONTRIBUTING -->
 ## Contributing
 
-If you have an idea that would make this package better, please fork the repo and create a pull request. Or, you can simply open an issue.
+If you have an idea to improve this package, please fork the repo and create a pull request. Or, you can simply open an issue.
 
 1. Fork the Project
 2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
@@ -164,7 +164,7 @@ Project Link: [https://github.com/ParemTech-Inc/aioptdevices](https://github.com
 <!-- ACKNOWLEDGMENTS -->
 ## Acknowledgments
 
-* Othneil Drew ([@othneildrew](https://github.com/othneildrew)) creator the [Best-README-Template](https://github.com/othneildrew/Best-README-Template)
+* Othneil Drew ([@othneildrew](https://github.com/othneildrew)) creator of the [Best-README-Template](https://github.com/othneildrew/Best-README-Template)
 * Robert Svensson ([@Kane610](https://github.com/Kane610)) creator of the [aiounifi package](https://github.com/Kane610/aiounifi)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
