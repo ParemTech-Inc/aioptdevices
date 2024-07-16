@@ -69,7 +69,8 @@ jobs:
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         repository-url: https://test.pypi.org/legacy/
-        skip_existing: true
+        password: ${{ secrets.PYPI_TEST_API_TOKEN }}
+        skip-existing: true
   # github-release:
   #   name: >-
   #     Sign the Python 🐍 distribution 📦 with Sigstore
