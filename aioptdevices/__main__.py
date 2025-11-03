@@ -31,7 +31,7 @@ async def connect(
         LOGGER.warning("failed to connect to PTDevices server: %s", err)
 
     except aioptdevices.PTDevicesUnauthorizedError as err:
-        LOGGER.warning("Unable, to read device data because of bad token: %s", err)
+        LOGGER.warning("Unable to read device data because of bad token: %s", err)
 
     except aioptdevices.PTDevicesForbiddenError as err:
         LOGGER.warning("Unable, device does not belong to the token holder: %s", err)
