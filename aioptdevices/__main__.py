@@ -116,7 +116,7 @@ def starter():
 
     LOGGER.info("\n%s\n", "  ARGS  ".center(48, "-"))  # Output a section title for args
     LOGGER.info("deviceID: %s", args.deviceID)
-    LOGGER.info("Token: %s", args.authToken)
+    # LOGGER.info("Token: %s", args.authToken)
     LOGGER.info("url: %s", args.url)
     LOGGER.info("debug: %s", args.debug)
 

@@ -4,7 +4,6 @@ from http import HTTPStatus
 import logging
 from typing import Any, TypedDict
 
-from aiohttp import client_exceptions
 import orjson
 
 from aioptdevices.errors import (
@@ -54,28 +53,30 @@ class Interface:
             allow_redirects=False,
         ) as results:
             LOGGER.debug(
-                "%s Received from %s, %s", results.status, self.config.url, results
+                "%s Received from %s",
+                results.status,
+                self.config.url,
             )
 
             # Check return code
             if results.status == HTTPStatus.UNAUTHORIZED:  # 401
                 raise PTDevicesUnauthorizedError(
-                    f"Request to {url} failed, the token provided is not valid"
+                    f"Request to {url.split('?api_token')[0]} failed, the token provided is not valid"
                 )
             elif results.status == HTTPStatus.FOUND:  # 302
                 # Back end currently returns a 302 when request is not authorized
                 raise PTDevicesUnauthorizedError(
-                    f"Request to {url} failed, the token provided is not valid (302)"
+                    f"Request to {url.split('?api_token')[0]} failed, the token provided is not valid (302)"
                 )
 
             elif results.status == HTTPStatus.FORBIDDEN:  # 403
                 raise PTDevicesForbiddenError(
-                    f"Request to {url} failed, token invalid for device {self.config.device_id}"
+                    f"Request to {url.split('?api_token')[0]} failed, token invalid for device {self.config.device_id}"
                 )
 
             elif results.status != HTTPStatus.OK:  # anything but 200
                 raise PTDevicesRequestError(
-                    f"Request to {url} failed, got unexpected response from server ({results.status})"
+                    f"Request to {url.split('?api_token')[0]} failed, got unexpected response from server ({results.status})"
                 )
 
             # Check content type
