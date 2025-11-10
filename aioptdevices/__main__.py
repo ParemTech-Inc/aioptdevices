@@ -31,7 +31,7 @@ async def connect(
         LOGGER.warning("failed to connect to PTDevices server: %s", err)
 
     except aioptdevices.PTDevicesUnauthorizedError as err:
-        LOGGER.warning("Unable, to read device data because of bad token: %s", err)
+        LOGGER.warning("Unable to read device data because of bad token: %s", err)
 
     except aioptdevices.PTDevicesForbiddenError as err:
         LOGGER.warning("Unable, device does not belong to the token holder: %s", err)
@@ -116,7 +116,7 @@ def starter():
 
     LOGGER.info("\n%s\n", "  ARGS  ".center(48, "-"))  # Output a section title for args
     LOGGER.info("deviceID: %s", args.deviceID)
-    LOGGER.info("Token: %s", args.authToken)
+    # LOGGER.info("Token: %s", args.authToken)
     LOGGER.info("url: %s", args.url)
     LOGGER.info("debug: %s", args.debug)
 
