@@ -3,6 +3,7 @@
 from typing import Any
 
 from aiohttp import ClientSession, CookieJar
+from aiohttp.client_exceptions import InvalidUrlClientError
 from aiohttp.test_utils import TestClient, TestServer, loop_context
 import pytest
 
@@ -48,7 +49,6 @@ def test_interface(test_web_app):
         interface: Interface = Interface(normal_config)
 
         async def test_get_data():
-
             resp: PTDevicesResponse = await interface.get_data()
             assert resp.get("body") == GOOD_RESP_DICT.get("data")
 
@@ -73,7 +73,6 @@ def test_mac_id(test_web_app):
         interface: Interface = Interface(normal_config)
 
         async def test_get_data():
-
             resp: PTDevicesResponse = await interface.get_data()
             assert resp.get("body") == GOOD_RESP_DICT.get("data")
 
@@ -135,7 +134,7 @@ def test_resp_error_handling(test_web_app):
                 )
             )
 
-            with pytest.raises(PTDevicesRequestError):  # Test UNAUTHORIZED (401)
+            with pytest.raises(InvalidUrlClientError):  # Test UNAUTHORIZED (401)
                 await interface.get_data()
 
         loop.run_until_complete(test_errors())
@@ -153,7 +152,7 @@ def test_real_server():
                 Configuration(
                     auth_token=secret_TOKEN,
                     device_id=secret_DEVICE_ID,
-                    url="http://www.ptdevices.com/token/v1/device/",
+                    url="https://api.ptdevices.com/token/v1/",
                     session=session,
                 )
             )
