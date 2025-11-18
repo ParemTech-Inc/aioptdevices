@@ -11,8 +11,10 @@ TOKEN: str = "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b" 
 # Device IDs
 NORMAL_DEVICE_ID: str = "200"  # Always returns OK (200) and a good body
 NORMAL_DEVICE_MAC: str = "123456789ABC"
+EMPTY_ERROR_DEVICE_ID: str = "0"  # Always returns an empty (200)
 WRONG_CONTENT_TYPE_DEVICE_ID: str = "199"  # Same as NORMAL but wrong content type
 UNAUTHORIZED_ERROR_DEVICE_ID: str = "401"  # Always Returns an UNAUTHORIZED (401)
+REDIRECT_ERROR_DEVICE_ID: str = "302"  # Always Returns an FOUND (302)
 FORBIDDEN_ERROR_DEVICE_ID: str = "403"  # Always Returns a FORBIDDEN (403)
 BAD_GATEWAY_ERROR_DEVICE_ID: str = "502"  # Always Returns a BAD_GATEWAY (502)
 
@@ -70,6 +72,13 @@ async def good_response(request: RequestInfo) -> web.Response:
     return web.Response(status=200, content_type="application/json", body=GOOD_RESP)
 
 
+async def empty_response(request: RequestInfo) -> web.Response:
+    """Return an empty response (200)."""
+    assert request.url.query.get("api_token") == TOKEN  # Verify the token is valid
+
+    return web.Response(status=200, content_type="application/json", body="")
+
+
 async def content_type_invalid_response(request: RequestInfo) -> web.Response:
     """Return an OK (200) with the wrong content type."""
     return web.Response(status=200, body=GOOD_RESP)
@@ -95,18 +104,6 @@ async def not_found_response(request: RequestInfo) -> web.Response:
     return web.Response(status=404)
 
 
-# @pytest.fixture(name="test_web_app")
-# def test_web_app() -> web.Application:
-#     """Create a test server for testing."""
-#     app = web.Application()
-#     app.router.add_get(f"{API_URL}{NORMAL_DEVICE_ID}", good_response)  # type: ignore  # noqa: PGH003
-#     app.router.add_get(f"{API_URL}{NORMAL_DEVICE_MAC}", good_response)  # type: ignore  # noqa: PGH003
-
-#     app.router.add_get(f"{API_URL}{UNAUTHORIZED_ERROR_DEVICE_ID}", unauthorized_response)  # type: ignore  # noqa: PGH003
-#     app.router.add_get(f"{API_URL}{FORBIDDEN_ERROR_DEVICE_ID}", forbidden_response)  # type: ignore  # noqa: PGH003
-#     app.router.add_get(f"{API_URL}{BAD_GATEWAY_ERROR_DEVICE_ID}", bad_gateway_response)  # type: ignore  # noqa: PGH003
-#     app.router.add_get(f"{API_URL}{WRONG_CONTENT_TYPE_DEVICE_ID}", content_type_invalid_response)  # type: ignore  # noqa: PGH003
-
-#     # app.router.add_get("/", not_found_response)  # type: ignore  # noqa: PGH003  # If any other URL, return not found
-
-#     return app
+async def redirect_response(request: RequestInfo) -> web.Response:
+    """Return a PAGE NOT FOUND (302) to any request."""
+    return web.Response(status=302)
