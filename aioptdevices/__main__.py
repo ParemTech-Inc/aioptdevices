@@ -5,6 +5,7 @@ import asyncio
 from asyncio.timeouts import timeout
 import logging
 
+import json
 from aiohttp import ClientSession, CookieJar
 
 import aioptdevices
@@ -90,12 +91,12 @@ async def main(
 
 def starter():
     """Parse CLI Arguments and fetch device data."""
-    default_url = "https://www.ptdevices.com/token/v1/device/"
+    default_url = "https://www.ptdevices.com/token/v1"
 
     # Parse cli args
     parser = argparse.ArgumentParser()
-    parser.add_argument("deviceID", type=int)
     parser.add_argument("authToken", type=str)
+    parser.add_argument("-I", "--id", type=str, default="")
     parser.add_argument("-U", "--url", type=str, default=default_url)
     parser.add_argument("-D", "--debug", action="store_true")
     args = parser.parse_args()
@@ -115,7 +116,7 @@ def starter():
     # --------------------  ARGS  --------------------
 
     LOGGER.info("\n%s\n", "  ARGS  ".center(48, "-"))  # Output a section title for args
-    LOGGER.info("deviceID: %s", args.deviceID)
+    LOGGER.info("deviceID: %s", args.id)
     # LOGGER.info("Token: %s", args.authToken)
     LOGGER.info("url: %s", args.url)
     LOGGER.info("debug: %s", args.debug)
@@ -124,7 +125,7 @@ def starter():
     try:
         asyncio.run(
             main(
-                deviceID=args.deviceID,
+                deviceID=args.id,
                 authToken=args.authToken,
                 url=args.url,
             )

@@ -38,14 +38,25 @@ class Interface:
         #   {deviceId} is the numeric internal device id,
         #       found in the url https://www.ptdevices.com/device/level/{deviceId}
         #   {given_token} is the access token you were given
+        #
+        # Request url: https://api.ptdevices.com/token/v1/devices?api_token={given_token}
+        # Where
+        #   {given_token} is the access token you were given
 
-        url = f"{self.config.url}{self.config.device_id}?api_token={self.config.auth_token}"
-
-        LOGGER.debug(
-            "Sending request to %s for data from device #%s",
-            self.config.url,
-            self.config.device_id,
-        )
+        # Construct the URL differently for multi device and single device requests
+        if self.config.device_id == "*":
+            url = f"{self.config.url}/devices?api_token={self.config.auth_token}"
+            LOGGER.debug(
+                "Sending request to %s for data from all devices",
+                self.config.url,
+            )
+        else:
+            url = f"{self.config.url}/device/{self.config.device_id}?api_token={self.config.auth_token}"
+            LOGGER.debug(
+                "Sending request to %s for data from device %s",
+                self.config.url,
+                self.config.device_id,
+            )
 
         async with self.config.session.request(
             "get",
