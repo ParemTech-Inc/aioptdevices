@@ -3,9 +3,9 @@
 import argparse
 import asyncio
 from asyncio.timeouts import timeout
+import json
 import logging
 
-import json
 from aiohttp import ClientSession, CookieJar
 
 import aioptdevices
@@ -16,18 +16,28 @@ LOGGER = logging.getLogger(__name__)
 
 
 async def connect(
-    deviceID: str, authToken: str, url: str, webSession: ClientSession
+    deviceID: str,
+    authToken: str,
+    url: str,
+    webSession: ClientSession,
 ) -> Interface | None:
     """Set up and Connect to PTDevices."""
 
     # Setup interface to PTDevices
     interface: Interface = Interface(
-        Configuration(authToken, deviceID, url, webSession)
+        Configuration(
+            authToken,
+            deviceID,
+            url,
+            webSession,
+        )
     )
     try:
         async with timeout(10):
             data = await interface.get_data()
-            LOGGER.info("Data: %s", data.get("body"))
+
+            formatted_body: str = json.dumps(data.get("body"), indent=2)
+            LOGGER.info("Data: %s", formatted_body)
     except aioptdevices.PTDevicesRequestError as err:
         LOGGER.warning("failed to connect to PTDevices server: %s", err)
 
