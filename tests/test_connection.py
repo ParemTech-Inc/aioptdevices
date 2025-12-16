@@ -1,8 +1,7 @@
 """Tests for interface class."""
 
-from typing import Any
-
 from aiohttp import ClientSession, CookieJar
+from aiohttp.client_exceptions import InvalidUrlClientError
 from aiohttp.test_utils import TestClient, TestServer, loop_context
 import pytest
 
@@ -12,16 +11,18 @@ from aioptdevices.errors import (
     PTDevicesRequestError,
     PTDevicesUnauthorizedError,
 )
-from aioptdevices.interface import Interface, PTDevicesResponse
+from aioptdevices.interface import Interface, PTDevicesResponse, PTDevicesResponseData
 
 # Add your token and device ID, **keep out of git**
 from .mock_api import (
     API_URL,
     BAD_GATEWAY_ERROR_DEVICE_ID,
+    EMPTY_ERROR_DEVICE_ID,
     FORBIDDEN_ERROR_DEVICE_ID,
     GOOD_RESP_DICT,
     NORMAL_DEVICE_ID,
     NORMAL_DEVICE_MAC,
+    REDIRECT_ERROR_DEVICE_ID,
     TOKEN,
     UNAUTHORIZED_ERROR_DEVICE_ID,
     WRONG_CONTENT_TYPE_DEVICE_ID,
@@ -48,7 +49,6 @@ def test_interface(test_web_app):
         interface: Interface = Interface(normal_config)
 
         async def test_get_data():
-
             resp: PTDevicesResponse = await interface.get_data()
             assert resp.get("body") == GOOD_RESP_DICT.get("data")
 
@@ -73,7 +73,6 @@ def test_mac_id(test_web_app):
         interface: Interface = Interface(normal_config)
 
         async def test_get_data():
-
             resp: PTDevicesResponse = await interface.get_data()
             assert resp.get("body") == GOOD_RESP_DICT.get("data")
 
@@ -113,6 +112,12 @@ def test_resp_error_handling(test_web_app):
             with pytest.raises(PTDevicesForbiddenError):  # Test UNAUTHORIZED (401)
                 await interface.get_data()
 
+            # FORBIDDEN (302) Handling
+            interface: Interface = make_interface(REDIRECT_ERROR_DEVICE_ID)
+
+            with pytest.raises(PTDevicesUnauthorizedError):  # Test UNAUTHORIZED (401)
+                await interface.get_data()
+
             # PTDevicesRequestError (403) Handling
             interface: Interface = make_interface(BAD_GATEWAY_ERROR_DEVICE_ID)
 
@@ -121,6 +126,12 @@ def test_resp_error_handling(test_web_app):
 
             # Wrong content type Handling
             interface: Interface = make_interface(WRONG_CONTENT_TYPE_DEVICE_ID)
+
+            with pytest.raises(PTDevicesRequestError):  # Test UNAUTHORIZED (401)
+                await interface.get_data()
+
+            # FORBIDDEN (302) Handling
+            interface: Interface = make_interface(EMPTY_ERROR_DEVICE_ID)
 
             with pytest.raises(PTDevicesRequestError):  # Test UNAUTHORIZED (401)
                 await interface.get_data()
@@ -135,7 +146,7 @@ def test_resp_error_handling(test_web_app):
                 )
             )
 
-            with pytest.raises(PTDevicesRequestError):  # Test UNAUTHORIZED (401)
+            with pytest.raises(InvalidUrlClientError):  # Test UNAUTHORIZED (401)
                 await interface.get_data()
 
         loop.run_until_complete(test_errors())
@@ -153,12 +164,12 @@ def test_real_server():
                 Configuration(
                     auth_token=secret_TOKEN,
                     device_id=secret_DEVICE_ID,
-                    url="http://www.ptdevices.com/token/v1/device/",
+                    url="https://api.ptdevices.com/token/v1",
                     session=session,
                 )
             )
             resp: PTDevicesResponse = await interface.get_data()
-            data: dict[str, Any] | None = resp.get("body")
+            data: PTDevicesResponseData = resp.get("body", {})
             assert data
             assert "device_id" in data
             await session.close()
@@ -166,34 +177,26 @@ def test_real_server():
         loop.run_until_complete(test_real_server())
 
 
-# interface: Interface = Interface(normal_config)
+def test_real_server_multi():
+    """Test the interface with the real server."""
+    with loop_context() as loop:
+        # Setup the test server
 
-# loop.run_until_complete(client.start_server())
+        async def test_real_server():
+            session: ClientSession = ClientSession(cookie_jar=CookieJar(unsafe=True))
+            interface: Interface = Interface(
+                Configuration(
+                    auth_token=secret_TOKEN,
+                    device_id="*",
+                    url="https://api.ptdevices.com/token/v1",
+                    session=session,
+                )
+            )
+            resp: PTDevicesResponse = await interface.get_data()
+            data: PTDevicesResponseData = resp.get("body", {})
+            assert data
+            assert type(data) is list
+            assert "device_id" in data[0]
+            await session.close()
 
-
-# def test_configuration(test_web_app):
-#     """Test the interface connection to a mock server."""
-#     with loop_context() as loop:
-#         server = TestServer(test_web_app)
-#         client = TestClient(server, loop=loop)
-#         loop.run_until_complete(client.start_server())
-
-#         async def test_get_routes():
-#             resp = await client.get(f"{API_URL}{NORMAL_DEVICE_ID}", params=query_params)
-
-#             # resp = await client.get(f"{API_URL}{NORMAL_DEVICE_ID}?api_token={TOKEN}")
-#             assert resp.status == 200
-#             resp = await client.get(
-#                 f"{API_URL}{BAD_GATEWAY_ERROR_DEVICE_ID}", params=query_params
-#             )
-#             assert resp.status == 502
-
-#         loop.run_until_complete(test_get_routes())
-#         loop.run_until_complete(client.close())
-
-# t_serv = test_server()
-# test_configuration: Configuration = Configuration(
-#     auth_token=
-#     device_id=
-
-# )
+        loop.run_until_complete(test_real_server())
