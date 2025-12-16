@@ -1,10 +1,10 @@
 [build-system]
-requires = ['setuptools>=65.4.1', 'wheel', 'Cython>=3.0.2']
+requires = ['setuptools>=65.4.1', 'wheel', 'Cython>=3.0.2', 'versioningit']
 
 [project]
 name = "aioptdevices"
 authors = [{name = "Matthew Gibson", email = "matthew.gibzon@gmail.com"},]
-version = "2025.11.4"
+dynamic = ["version"]
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -15,6 +15,12 @@ classifiers=[
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
 ]
+
+[tool.versioningit]
+[tool.versioningit.format]
+distance = "{base_version}"
+dirty = "{base_version}"
+distance-dirty = "{base_version}"
 
 [project.optional-dependencies]
 requirements = [
