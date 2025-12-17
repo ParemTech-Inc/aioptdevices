@@ -17,13 +17,10 @@ from .configuration import Configuration
 LOGGER = logging.getLogger(__name__)
 
 
-type PTDevicesResponseData = dict[str, Any] | list[dict[str, Any]]
-
-
 class PTDevicesResponse(TypedDict, total=False):
     """Typed Response from PTDevices."""
 
-    body: PTDevicesResponseData
+    body: dict[str, dict[str, Any]]
     code: int
 
 
@@ -106,7 +103,17 @@ class Interface:
 
             body = orjson.loads(raw_json)
 
-            return PTDevicesResponse(
-                code=results.status,
-                body=body["data"],
+                    # New formatting code
+                    formatted_body: dict[str, dict[str, Any]] = {
+                        device.get("device_id", ""): device
+                        for device in (
+                            body["data"]
+                            if type(body["data"]) is list
+                            else [body["data"]]
+                        )
+                    }
+
+                    # Store the new data to the response and return
+                    return PTDevicesResponse(code=results.status, body=formatted_body)
+
             )

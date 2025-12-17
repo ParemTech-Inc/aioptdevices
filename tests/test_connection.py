@@ -4,6 +4,7 @@ from aiohttp import ClientSession, CookieJar
 from aiohttp.client_exceptions import InvalidUrlClientError
 from aiohttp.test_utils import TestClient, TestServer, loop_context
 import pytest
+from typing import Any
 
 from aioptdevices.configuration import Configuration
 from aioptdevices.errors import (
@@ -11,7 +12,7 @@ from aioptdevices.errors import (
     PTDevicesRequestError,
     PTDevicesUnauthorizedError,
 )
-from aioptdevices.interface import Interface, PTDevicesResponse, PTDevicesResponseData
+from aioptdevices.interface import Interface, PTDevicesResponse
 
 # Add your token and device ID, **keep out of git**
 from .mock_api import (
@@ -50,7 +51,7 @@ def test_interface(test_web_app):
 
         async def test_get_data():
             resp: PTDevicesResponse = await interface.get_data()
-            assert resp.get("body") == GOOD_RESP_DICT.get("data")
+            assert resp.get("body") == GOOD_RESP_DICT
 
         loop.run_until_complete(test_get_data())
         loop.run_until_complete(client.close())
@@ -74,7 +75,7 @@ def test_mac_id(test_web_app):
 
         async def test_get_data():
             resp: PTDevicesResponse = await interface.get_data()
-            assert resp.get("body") == GOOD_RESP_DICT.get("data")
+            assert resp.get("body") == GOOD_RESP_DICT
 
         loop.run_until_complete(test_get_data())
         loop.run_until_complete(client.close())
@@ -169,9 +170,9 @@ def test_real_server():
                 )
             )
             resp: PTDevicesResponse = await interface.get_data()
-            data: PTDevicesResponseData = resp.get("body", {})
+            data: dict[str, dict[str, Any]] = resp.get("body", {})
             assert data
-            assert "device_id" in data
+            assert "device_id" in list(data.values())[0]
             await session.close()
 
         loop.run_until_complete(test_real_server())
@@ -193,10 +194,9 @@ def test_real_server_multi():
                 )
             )
             resp: PTDevicesResponse = await interface.get_data()
-            data: PTDevicesResponseData = resp.get("body", {})
+            data: dict[str, dict[str, Any]] = resp.get("body", {})
             assert data
-            assert type(data) is list
-            assert "device_id" in data[0]
+            assert "device_id" in list(data.values())[0]
             await session.close()
 
         loop.run_until_complete(test_real_server())
