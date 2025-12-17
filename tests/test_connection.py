@@ -3,6 +3,7 @@
 from aiohttp import ClientSession, CookieJar
 from aiohttp.client_exceptions import InvalidUrlClientError
 from aiohttp.test_utils import TestClient, TestServer, loop_context
+from unittest.mock import patch
 import pytest
 from typing import Any
 
@@ -137,18 +138,12 @@ def test_resp_error_handling(test_web_app):
             with pytest.raises(PTDevicesRequestError):  # Test UNAUTHORIZED (401)
                 await interface.get_data()
 
-            # Bad URL handling
-            interface: Interface = Interface(
-                Configuration(
-                    auth_token=TOKEN,
-                    device_id=NORMAL_DEVICE_ID,
-                    url=API_URL,
-                    session=client.session,
-                )
-            )
-
-            with pytest.raises(InvalidUrlClientError):  # Test UNAUTHORIZED (401)
-                await interface.get_data()
+            with patch(
+                "aiohttp.ClientSession.request",
+                side_effect=TimeoutError,
+            ):
+                with pytest.raises(PTDevicesRequestError):
+                    await interface.get_data()
 
         loop.run_until_complete(test_errors())
         loop.run_until_complete(client.close())

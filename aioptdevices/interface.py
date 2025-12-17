@@ -5,6 +5,7 @@ import logging
 from typing import Any, TypedDict
 
 import orjson
+import asyncio
 
 from aioptdevices.errors import (
     PTDevicesForbiddenError,
@@ -58,50 +59,52 @@ class Interface:
                 self.config.device_id,
             )
 
-        async with self.config.session.request(
-            "get",
-            url,
-            allow_redirects=False,
-        ) as results:
-            LOGGER.debug(
-                "%s Received from %s",
-                results.status,
-                self.config.url,
-            )
+        try:
+            async with asyncio.timeout(10):
+                async with self.config.session.request(
+                    "get",
+                    url,
+                    allow_redirects=False,
+                ) as results:
+                    LOGGER.debug(
+                        "%s Received from %s",
+                        results.status,
+                        self.config.url,
+                    )
 
-            # Check return code
-            if results.status == HTTPStatus.UNAUTHORIZED:  # 401
-                raise PTDevicesUnauthorizedError(
-                    f"Request to {url.split('?api_token')[0]} failed, the token provided is not valid"
-                )
-            if results.status == HTTPStatus.FOUND:  # 302
-                # Back end currently returns a 302 when request is not authorized
-                raise PTDevicesUnauthorizedError(
-                    f"Request to {url.split('?api_token')[0]} failed, the token provided is not valid (302)"
-                )
+                    # Check return code
+                    if results.status == HTTPStatus.UNAUTHORIZED:  # 401
+                        raise PTDevicesUnauthorizedError(
+                            f"Request to {url.split('?api_token')[0]} failed, the token provided is not valid"
+                        )
+                    if results.status == HTTPStatus.FOUND:  # 302
+                        # Back end currently returns a 302 when request is not authorized
+                        raise PTDevicesUnauthorizedError(
+                            f"Request to {url.split('?api_token')[0]} failed, the token provided is not valid (302)"
+                        )
 
-            if results.status == HTTPStatus.FORBIDDEN:  # 403
-                raise PTDevicesForbiddenError(
-                    f"Request to {url.split('?api_token')[0]} failed, token invalid for device {self.config.device_id}"
-                )
+                    if results.status == HTTPStatus.FORBIDDEN:  # 403
+                        raise PTDevicesForbiddenError(
+                            f"Request to {url.split('?api_token')[0]} failed, token invalid for device {self.config.device_id}"
+                        )
 
-            if results.status != HTTPStatus.OK:  # anything but 200
-                raise PTDevicesRequestError(
-                    f"Request to {url.split('?api_token')[0]} failed, got unexpected response from server ({results.status})"
-                )
+                    if results.status != HTTPStatus.OK:  # anything but 200
+                        raise PTDevicesRequestError(
+                            f"Request to {url.split('?api_token')[0]} failed, got unexpected response from server ({results.status})"
+                        )
 
-            # Check content type
-            if (
-                results.content_type != "application/json"
-                or results.content_length == 0
-            ):
-                raise PTDevicesRequestError(
-                    f"Failed to get device data, returned content is invalid. Type: {results.content_type}, content Length: {results.content_length}, content: {results.content}"
-                )
+                    # Check content type
+                    if (
+                        results.content_type != "application/json"
+                        or results.content_length == 0
+                    ):
+                        raise PTDevicesRequestError(
+                            f"Failed to get device data, returned content is invalid. Type: {results.content_type}, content Length: {results.content_length}, content: {results.content}"
+                        )
 
-            raw_json = await results.read()
+                    raw_json = await results.read()
 
-            body = orjson.loads(raw_json)
+                    body = orjson.loads(raw_json)
 
                     # New formatting code
                     formatted_body: dict[str, dict[str, Any]] = {
@@ -116,4 +119,8 @@ class Interface:
                     # Store the new data to the response and return
                     return PTDevicesResponse(code=results.status, body=formatted_body)
 
+        except TimeoutError:
+            # If the request timed out, throw a request error
+            raise PTDevicesRequestError(
+                f"Request to {url.split('?api_token')[0]} failed, request timed out"
             )
