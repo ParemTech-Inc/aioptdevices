@@ -101,12 +101,12 @@ async def main(
 
 def starter():
     """Parse CLI Arguments and fetch device data."""
-    default_url = "https://www.ptdevices.com/token/v1"
+    default_url = "https://api.ptdevices.com/token/v1"
 
     # Parse cli args
     parser = argparse.ArgumentParser()
     parser.add_argument("authToken", type=str)
-    parser.add_argument("-I", "--id", type=str, default="")
+    parser.add_argument("-I", "--id", type=str, default="*")
     parser.add_argument("-U", "--url", type=str, default=default_url)
     parser.add_argument("-D", "--debug", action="store_true")
     args = parser.parse_args()
