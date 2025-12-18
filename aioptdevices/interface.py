@@ -25,6 +25,37 @@ class PTDevicesResponse(TypedDict, total=False):
     code: int
 
 
+def _format_data(
+    input: list[dict[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    """Format the returned data into a more helpful form. This includes putting id's as keys and flattening the dict."""
+    output: dict[str, dict[str, Any]] = {}
+
+    # Add id's as keys
+    devices: dict[str, dict[str, Any]] = {
+        device.get("device_id", ""): device for device in input
+    }
+
+    # Flatten the dict
+
+    # Recurse through key value pairs and convert from nested to flat
+    def recurse(sub_dict: dict[str, dict[str, Any]]) -> dict[str, Any]:
+        results: dict[str, Any] = {}
+
+        for key, value in sub_dict.items():
+            if isinstance(value, dict):
+                results = {**results, **recurse(value)}
+            else:
+                results[key] = value
+
+        return results
+
+    for device_id, device in devices.items():
+        output[device_id] = recurse(device)
+
+    return output
+
+
 class Interface:
     """Interface for PTDevices."""
 
@@ -105,19 +136,12 @@ class Interface:
                     raw_json = await results.read()
 
                     body = orjson.loads(raw_json)
-
-                    # New formatting code
-                    formatted_body: dict[str, dict[str, Any]] = {
-                        device.get("device_id", ""): device
-                        for device in (
-                            body["data"]
-                            if type(body["data"]) is list
-                            else [body["data"]]
-                        )
-                    }
+                    formatted_data: dict[str, dict[str, Any]] = _format_data(
+                        body["data"] if type(body["data"]) is list else [body["data"]]
+                    )
 
                     # Store the new data to the response and return
-                    return PTDevicesResponse(code=results.status, body=formatted_body)
+                    return PTDevicesResponse(code=results.status, body=formatted_data)
 
         except TimeoutError:
             # If the request timed out, throw a request error
