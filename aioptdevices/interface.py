@@ -17,6 +17,8 @@ from .configuration import Configuration
 
 LOGGER = logging.getLogger(__name__)
 
+type PTDevicesResponseData = dict[str, dict[str, Any]]
+
 
 class PTDevicesResponse(TypedDict, total=False):
     """Typed Response from PTDevices."""
