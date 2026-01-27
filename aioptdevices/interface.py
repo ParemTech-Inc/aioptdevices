@@ -37,14 +37,19 @@ class PTDevicesStatusStates(StrEnum):
     NOT_CONNECTED = "not_connected"
     TRANSMITTER_NOT_REPORTING = "transmitter_not_reporting"
     PRESS_TRANSMITTER_CONNECT_BUTTON = "press_transmitter_connect_button"
+    POWER_INTERNET_OUT_OR_RECEIVER_NOT_WORKING = (
+        "power_internet_out_or_receiver_not_working"
+    )
 
 
-_value_translations: dict[str, str] = {
-    "Working": PTDevicesStatusStates.WORKING,
-    "Not Connected Yet": PTDevicesStatusStates.NOT_CONNECTED_YET,
-    "Not Connected": PTDevicesStatusStates.NOT_CONNECTED,
-    "Transmitter Not Reporting": PTDevicesStatusStates.TRANSMITTER_NOT_REPORTING,
-    "Press Transmitter Connect Button": PTDevicesStatusStates.PRESS_TRANSMITTER_CONNECT_BUTTON,
+_status_value_translations: dict[int, str] = {
+    0: PTDevicesStatusStates.NOT_CONNECTED_YET,
+    1: PTDevicesStatusStates.NOT_CONNECTED_YET,
+    2: PTDevicesStatusStates.WORKING,
+    3: PTDevicesStatusStates.NOT_CONNECTED,
+    4: PTDevicesStatusStates.TRANSMITTER_NOT_REPORTING,
+    5: PTDevicesStatusStates.POWER_INTERNET_OUT_OR_RECEIVER_NOT_WORKING,
+    6: PTDevicesStatusStates.PRESS_TRANSMITTER_CONNECT_BUTTON,
 }
 
 
@@ -80,9 +85,10 @@ def _format_data(
     # {"id":{...info...},"id2":{...info...}}
 
     for device_id, device in output.items():
-        if device["status"] in _value_translations.keys():
-            output[device_id]["status"] = _value_translations[
-                output[device_id]["status"]
+        # Translate the device status number
+        if device["status_number"] in _status_value_translations.keys():
+            output[device_id]["status"] = _status_value_translations[
+                device["status_number"]
             ]
         else:
             output[device_id]["status"] = PTDevicesStatusStates.UNKNOWN
