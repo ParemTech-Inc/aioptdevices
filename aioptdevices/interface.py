@@ -1,5 +1,6 @@
 """Python Library for communicating with PTDevices."""
 
+from enum import StrEnum
 from http import HTTPStatus
 import logging
 from typing import Any, TypedDict
@@ -25,6 +26,26 @@ class PTDevicesResponse(TypedDict, total=False):
 
     body: dict[str, dict[str, Any]]
     code: int
+
+
+class PTDevicesStatusStates(StrEnum):
+    """Store keys for the different device_status states."""
+
+    UNKNOWN = "unknown"
+    WORKING = "working"
+    NOT_CONNECTED_YET = "not_connected_yet"
+    NOT_CONNECTED = "not_connected"
+    TRANSMITTER_NOT_REPORTING = "transmitter_not_reporting"
+    PRESS_TRANSMITTER_CONNECT_BUTTON = "press_transmitter_connect_button"
+
+
+_value_translations: dict[str, str] = {
+    "Working": PTDevicesStatusStates.WORKING,
+    "Not Connected Yet": PTDevicesStatusStates.NOT_CONNECTED_YET,
+    "Not Connected": PTDevicesStatusStates.NOT_CONNECTED,
+    "Transmitter Not Reporting": PTDevicesStatusStates.TRANSMITTER_NOT_REPORTING,
+    "Press Transmitter Connect Button": PTDevicesStatusStates.PRESS_TRANSMITTER_CONNECT_BUTTON,
+}
 
 
 def _format_data(
@@ -54,6 +75,17 @@ def _format_data(
 
     for device_id, device in devices.items():
         output[device_id] = recurse(device)
+
+    # At this point the data has been transformed into a flat dict
+    # {"id":{...info...},"id2":{...info...}}
+
+    for device_id, device in output.items():
+        if device["status"] in _value_translations.keys():
+            output[device_id]["status"] = _value_translations[
+                output[device_id]["status"]
+            ]
+        else:
+            output[device_id]["status"] = PTDevicesStatusStates.UNKNOWN
 
     return output
 
