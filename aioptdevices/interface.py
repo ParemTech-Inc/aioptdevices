@@ -108,12 +108,13 @@ def _format_data(
             output[device_id]["status"] = PTDevicesStatusStates.UNKNOWN
 
         # Translate the battery status number
-        if device["battery_status_number"] in _battery_value_translations.keys():
-            output[device_id]["battery_status"] = _battery_value_translations[
-                device["battery_status_number"]
-            ]
-        else:
-            output[device_id]["battery_status"] = PTDevicesBatteryState.UNKNOWN
+        if device.get("battery_status_number") is not None:
+            if device["battery_status_number"] in _battery_value_translations.keys():
+                output[device_id]["battery_status"] = _battery_value_translations[
+                    device["battery_status_number"]
+                ]
+            else:
+                output[device_id]["battery_status"] = PTDevicesBatteryState.UNKNOWN
 
     return output
 
