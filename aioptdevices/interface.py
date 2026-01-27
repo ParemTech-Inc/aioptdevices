@@ -7,6 +7,7 @@ from typing import Any, TypedDict
 
 import orjson
 import asyncio
+from string import ascii_letters
 
 from aioptdevices.errors import (
     PTDevicesForbiddenError,
@@ -66,6 +67,17 @@ _status_value_translations: dict[int, str] = {
     6: PTDevicesStatusStates.PRESS_TRANSMITTER_CONNECT_BUTTON,
 }
 
+_convert_to_number_keys: dict[str, type] = {
+    "version": int,
+    "wifi_signal": int,
+    "tx_signal": float,
+    "percent_level": float,
+    "battery_voltage": float,
+    "volume_level": float,
+    "inch_level": float,
+    "probe_temperature": float,
+}
+
 
 def _format_data(
     input: list[dict[str, Any]],
@@ -115,6 +127,35 @@ def _format_data(
                 ]
             else:
                 output[device_id]["battery_status"] = PTDevicesBatteryState.UNKNOWN
+
+        # Change all measurements to float | int | str
+        for key in _convert_to_number_keys.keys():
+            if device.get(key) is not None and isinstance(device.get(key), str):
+                output[device_id][key] = float(
+                    device.get(key, "").strip(ascii_letters + "%")
+                )
+
+        # Change all measurements to metric
+        if device.get("percent_level") is not None:
+            output[device_id]["inch_level"] = 0.0254 * float(
+                device.get("inch_level", 0.0)
+            )
+
+            if device.get("units", "") == "US Imperial":
+                output[device_id]["volume_level"] = 3.785411784 * float(
+                    device.get("volume_level", 0.0)
+                )
+
+            if device.get("units", "") == "British Imperial":
+                output[device_id]["volume_level"] = 4.54609 * float(
+                    device.get("volume_level", 0.0)
+                )
+
+        if device.get("probe_temperature") is not None:
+            if device.get("temperature_units", "") == "F":
+                output[device_id]["probe_temperature"] = (
+                    float(device.get("probe_temperature", 0.0)) - 32
+                ) * 0.5555555556
 
     return output
 
