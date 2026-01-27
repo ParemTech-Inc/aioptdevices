@@ -28,6 +28,20 @@ class PTDevicesResponse(TypedDict, total=False):
     code: int
 
 
+class PTDevicesBatteryState(StrEnum):
+    """Store keys for hte different battery_status states."""
+
+    UNKNOWN = "unknown"
+    GOOD = "good"
+    LOW = "low"
+
+
+_battery_value_translations: dict[int, str] = {
+    1: PTDevicesBatteryState.GOOD,
+    2: PTDevicesBatteryState.LOW,
+}
+
+
 class PTDevicesStatusStates(StrEnum):
     """Store keys for the different device_status states."""
 
@@ -92,6 +106,14 @@ def _format_data(
             ]
         else:
             output[device_id]["status"] = PTDevicesStatusStates.UNKNOWN
+
+        # Translate the battery status number
+        if device["battery_status_number"] in _battery_value_translations.keys():
+            output[device_id]["battery_status"] = _battery_value_translations[
+                device["battery_status_number"]
+            ]
+        else:
+            output[device_id]["battery_status"] = PTDevicesBatteryState.UNKNOWN
 
     return output
 
