@@ -131,8 +131,8 @@ def _format_data(
         # Change all measurements to float | int | str
         for key in _convert_to_number_keys.keys():
             if device.get(key) is not None and isinstance(device.get(key), str):
-                output[device_id][key] = float(
-                    device.get(key, "").strip(ascii_letters + "%")
+                output[device_id][key] = _convert_to_number_keys[key](
+                    device.get(key, "").strip(ascii_letters + "%"),
                 )
 
         # Change all measurements to metric
