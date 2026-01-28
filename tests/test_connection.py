@@ -22,7 +22,11 @@ from .mock_api import (
     EMPTY_ERROR_DEVICE_ID,
     FORBIDDEN_ERROR_DEVICE_ID,
     GOOD_RESP_DICT,
+    GOOD_RESP_DICT_US_IMP,
+    GOOD_RESP_DICT_UK_IMP,
     NORMAL_DEVICE_ID,
+    NORMAL_DEVICE_ID_US,
+    NORMAL_DEVICE_ID_UK,
     NORMAL_DEVICE_MAC,
     REDIRECT_ERROR_DEVICE_ID,
     TOKEN,
@@ -79,6 +83,46 @@ def test_mac_id(test_web_app):
             assert resp.get("body") == GOOD_RESP_DICT
 
         loop.run_until_complete(test_get_data())
+        loop.run_until_complete(client.close())
+
+
+def test_unit_conversion(test_web_app):
+    """Test the automatic unit conversion."""
+    with loop_context() as loop:
+        # Setup the test server
+        server = TestServer(test_web_app)
+        client = TestClient(server, loop=loop)
+        loop.run_until_complete(client.start_server())
+
+        # Test US Units
+        normal_config: Configuration = Configuration(
+            auth_token=TOKEN,
+            device_id=NORMAL_DEVICE_ID_US,
+            url=str(client.make_url(API_URL)),
+            session=client.session,
+        )
+        interface: Interface = Interface(normal_config)
+
+        async def test_get_data_us():
+            resp: PTDevicesResponse = await interface.get_data()
+            assert resp.get("body") == GOOD_RESP_DICT_US_IMP
+
+        loop.run_until_complete(test_get_data_us())
+
+        # Test UK Units
+        normal_config: Configuration = Configuration(
+            auth_token=TOKEN,
+            device_id=NORMAL_DEVICE_ID_UK,
+            url=str(client.make_url(API_URL)),
+            session=client.session,
+        )
+        interface: Interface = Interface(normal_config)
+
+        async def test_get_data_uk():
+            resp: PTDevicesResponse = await interface.get_data()
+            assert resp.get("body") == GOOD_RESP_DICT_UK_IMP
+
+        loop.run_until_complete(test_get_data_uk())
         loop.run_until_complete(client.close())
 
 
