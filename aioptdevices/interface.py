@@ -113,20 +113,24 @@ def _format_data(
     for device_id, device in output.items():
         # Translate the device status number
         if device["status_number"] in _status_value_translations.keys():
-            output[device_id]["status"] = _status_value_translations[
-                device["status_number"]
-            ]
+            output[device_id]["status"] = str(
+                _status_value_translations[device["status_number"]]
+            )
         else:
-            output[device_id]["status"] = PTDevicesStatusStates.UNKNOWN
+            output[device_id]["status"] = str(
+                PTDevicesStatusStates.UNKNOWN
+            )  # TODO tests dont cover this
 
         # Translate the battery status number
         if device.get("battery_status_number") is not None:
             if device["battery_status_number"] in _battery_value_translations.keys():
-                output[device_id]["battery_status"] = _battery_value_translations[
-                    device["battery_status_number"]
-                ]
+                output[device_id]["battery_status"] = str(
+                    _battery_value_translations[device["battery_status_number"]]
+                )
             else:
-                output[device_id]["battery_status"] = PTDevicesBatteryState.UNKNOWN
+                output[device_id]["battery_status"] = str(
+                    PTDevicesBatteryState.UNKNOWN
+                )  # TODO tests dont cover this
 
         # Change all measurements to float | int | str
         for key in _convert_to_number_keys.keys():
@@ -137,25 +141,25 @@ def _format_data(
 
         # Change all measurements to metric
         if device.get("percent_level") is not None:
-            output[device_id]["inch_level"] = 0.0254 * float(
-                device.get("inch_level", 0.0)
+            output[device_id]["inch_level"] = round(
+                0.0254 * float(device.get("inch_level", 0.0)), 6
             )
 
             if device.get("units", "") == "US Imperial":
-                output[device_id]["volume_level"] = 3.785411784 * float(
-                    device.get("volume_level", 0.0)
+                output[device_id]["volume_level"] = round(
+                    3.785411784 * float(device.get("volume_level", 0.0)), 6
                 )
 
             if device.get("units", "") == "British Imperial":
-                output[device_id]["volume_level"] = 4.54609 * float(
-                    device.get("volume_level", 0.0)
+                output[device_id]["volume_level"] = round(
+                    4.54609 * float(device.get("volume_level", 0.0)), 6
                 )
 
         if device.get("probe_temperature") is not None:
             if device.get("temperature_units", "") == "F":
-                output[device_id]["probe_temperature"] = (
-                    float(device.get("probe_temperature", 0.0)) - 32
-                ) * 0.5555555556
+                output[device_id]["probe_temperature"] = round(
+                    (float(device.get("probe_temperature", 0.0)) - 32) * 0.5555555556, 3
+                )
 
     return output
 
