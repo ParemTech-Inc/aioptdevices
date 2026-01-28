@@ -9,6 +9,8 @@ from .mock_api import (
     EMPTY_ERROR_DEVICE_ID,
     FORBIDDEN_ERROR_DEVICE_ID,
     NORMAL_DEVICE_ID,
+    NORMAL_DEVICE_ID_US,
+    NORMAL_DEVICE_ID_UK,
     NORMAL_DEVICE_MAC,
     REDIRECT_ERROR_DEVICE_ID,
     UNAUTHORIZED_ERROR_DEVICE_ID,
@@ -18,6 +20,8 @@ from .mock_api import (
     empty_response,
     forbidden_response,
     good_response,
+    good_response_us_imperial_conversions,
+    good_response_uk_imperial_conversions,
     redirect_response,
     unauthorized_response,
 )
@@ -29,6 +33,14 @@ def test_web_app() -> web.Application:
     app = web.Application()
     app.router.add_get(f"{API_URL}/device/{NORMAL_DEVICE_ID}", good_response)  # type: ignore  # noqa: PGH003
     app.router.add_get(f"{API_URL}/device/{NORMAL_DEVICE_MAC}", good_response)  # type: ignore  # noqa: PGH003
+    app.router.add_get(
+        f"{API_URL}/device/{NORMAL_DEVICE_ID_US}",
+        good_response_us_imperial_conversions,
+    )  # type: ignore  # noqa: PGH003
+    app.router.add_get(
+        f"{API_URL}/device/{NORMAL_DEVICE_ID_UK}",
+        good_response_uk_imperial_conversions,
+    )  # type: ignore  # noqa: PGH003
 
     app.router.add_get(
         f"{API_URL}/device/{EMPTY_ERROR_DEVICE_ID}",

@@ -1,11 +1,13 @@
 """Python Library for communicating with PTDevices."""
 
+from enum import StrEnum
 from http import HTTPStatus
 import logging
 from typing import Any, TypedDict
 
 import orjson
 import asyncio
+from string import ascii_letters
 
 from aioptdevices.errors import (
     PTDevicesForbiddenError,
@@ -17,12 +19,64 @@ from .configuration import Configuration
 
 LOGGER = logging.getLogger(__name__)
 
+type PTDevicesResponseData = dict[str, dict[str, Any]]
+
 
 class PTDevicesResponse(TypedDict, total=False):
     """Typed Response from PTDevices."""
 
     body: dict[str, dict[str, Any]]
     code: int
+
+
+class PTDevicesBatteryState(StrEnum):
+    """Store keys for hte different battery_status states."""
+
+    UNKNOWN = "unknown"
+    GOOD = "good"
+    LOW = "low"
+
+
+_battery_value_translations: dict[int, str] = {
+    1: PTDevicesBatteryState.GOOD,
+    2: PTDevicesBatteryState.LOW,
+}
+
+
+class PTDevicesStatusStates(StrEnum):
+    """Store keys for the different device_status states."""
+
+    UNKNOWN = "unknown"
+    WORKING = "working"
+    NOT_CONNECTED_YET = "not_connected_yet"
+    NOT_CONNECTED = "not_connected"
+    TRANSMITTER_NOT_REPORTING = "transmitter_not_reporting"
+    PRESS_TRANSMITTER_CONNECT_BUTTON = "press_transmitter_connect_button"
+    POWER_INTERNET_OUT_OR_RECEIVER_NOT_WORKING = (
+        "power_internet_out_or_receiver_not_working"
+    )
+
+
+_status_value_translations: dict[int, str] = {
+    0: PTDevicesStatusStates.NOT_CONNECTED_YET,
+    1: PTDevicesStatusStates.NOT_CONNECTED_YET,
+    2: PTDevicesStatusStates.WORKING,
+    3: PTDevicesStatusStates.NOT_CONNECTED,
+    4: PTDevicesStatusStates.TRANSMITTER_NOT_REPORTING,
+    5: PTDevicesStatusStates.POWER_INTERNET_OUT_OR_RECEIVER_NOT_WORKING,
+    6: PTDevicesStatusStates.PRESS_TRANSMITTER_CONNECT_BUTTON,
+}
+
+_convert_to_number_keys: dict[str, type] = {
+    "version": int,
+    "wifi_signal": int,
+    "tx_signal": float,
+    "percent_level": float,
+    "battery_voltage": float,
+    "volume_level": float,
+    "inch_level": float,
+    "probe_temperature": float,
+}
 
 
 def _format_data(
@@ -52,6 +106,60 @@ def _format_data(
 
     for device_id, device in devices.items():
         output[device_id] = recurse(device)
+
+    # At this point the data has been transformed into a flat dict
+    # {"id":{...info...},"id2":{...info...}}
+
+    for device_id, device in output.items():
+        # Translate the device status number
+        if device["status_number"] in _status_value_translations.keys():
+            output[device_id]["status"] = str(
+                _status_value_translations[device["status_number"]]
+            )
+        else:
+            output[device_id]["status"] = str(
+                PTDevicesStatusStates.UNKNOWN
+            )  # TODO tests dont cover this
+
+        # Translate the battery status number
+        if device.get("battery_status_number") is not None:
+            if device["battery_status_number"] in _battery_value_translations.keys():
+                output[device_id]["battery_status"] = str(
+                    _battery_value_translations[device["battery_status_number"]]
+                )
+            else:
+                output[device_id]["battery_status"] = str(
+                    PTDevicesBatteryState.UNKNOWN
+                )  # TODO tests dont cover this
+
+        # Change all measurements to float | int | str
+        for key in _convert_to_number_keys.keys():
+            if device.get(key) is not None and isinstance(device.get(key), str):
+                output[device_id][key] = _convert_to_number_keys[key](
+                    device.get(key, "").strip(ascii_letters + "%"),
+                )
+
+        # Change all measurements to metric
+        if device.get("percent_level") is not None:
+            output[device_id]["inch_level"] = round(
+                0.0254 * float(device.get("inch_level", 0.0)), 6
+            )
+
+            if device.get("units", "") == "US Imperial":
+                output[device_id]["volume_level"] = round(
+                    3.785411784 * float(device.get("volume_level", 0.0)), 6
+                )
+
+            if device.get("units", "") == "British Imperial":
+                output[device_id]["volume_level"] = round(
+                    4.54609 * float(device.get("volume_level", 0.0)), 6
+                )
+
+        if device.get("probe_temperature") is not None:
+            if device.get("temperature_units", "") == "F":
+                output[device_id]["probe_temperature"] = round(
+                    (float(device.get("probe_temperature", 0.0)) - 32) * 0.5555555556, 3
+                )
 
     return output
 
