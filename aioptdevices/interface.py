@@ -139,12 +139,14 @@ def _format_data(
                     device.get(key, "").strip(ascii_letters + "%"),
                 )
 
-        # Change all measurements to metric
-        if device.get("percent_level") is not None:
-            output[device_id]["inch_level"] = round(
+        # Change the inch_level to depth_level and convert to metric (meters)
+        if device.get("inch_level") is not None:
+            output[device_id]["depth_level"] = round(
                 0.0254 * float(device.get("inch_level", 0.0)), 6
             )
+            output[device_id].pop("inch_level")
 
+        if device.get("volume_level") is not None:
             if device.get("units", "") == "US Imperial":
                 output[device_id]["volume_level"] = round(
                     3.785411784 * float(device.get("volume_level", 0.0)), 6
