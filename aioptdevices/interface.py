@@ -3,7 +3,7 @@
 from enum import StrEnum
 from http import HTTPStatus
 import logging
-from typing import Any, TypedDict
+from typing import Any, TypedDict, Required
 
 import orjson
 import asyncio
@@ -25,8 +25,8 @@ type PTDevicesResponseData = dict[str, dict[str, Any]]
 class PTDevicesResponse(TypedDict, total=False):
     """Typed Response from PTDevices."""
 
-    body: dict[str, dict[str, Any]]
-    code: int
+    body: Required[dict[str, dict[str, Any]]]
+    code: Required[int]
 
 
 class PTDevicesBatteryState(StrEnum):
