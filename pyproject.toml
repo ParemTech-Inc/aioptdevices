@@ -1,5 +1,5 @@
 [build-system]
-requires = ['setuptools>=65.4.1', 'wheel', 'Cython>=3.0.2', 'versioningit']
+requires = ['setuptools>=65.4.1', 'wheel', 'versioningit']
 
 [project]
 name = "aioptdevices"
