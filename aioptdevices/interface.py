@@ -68,7 +68,7 @@ _status_value_translations: dict[int, str] = {
 }
 
 _convert_to_number_keys: dict[str, type] = {
-    "version": int,
+    "version": str,
     "wifi_signal": int,
     "tx_signal": float,
     "percent_level": float,
