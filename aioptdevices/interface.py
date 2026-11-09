@@ -1,16 +1,18 @@
 """Python Library for communicating with PTDevices."""
 
+import asyncio
+from collections.abc import Collection
 from enum import StrEnum
 from http import HTTPStatus
 import logging
-from typing import Any, TypedDict, Required
+from string import ascii_letters
+from typing import Any, Required, TypedDict
 
 import orjson
-import asyncio
-from string import ascii_letters
 
 from aioptdevices.errors import (
     PTDevicesForbiddenError,
+    PTDevicesParseError,
     PTDevicesRequestError,
     PTDevicesUnauthorizedError,
 )
@@ -27,6 +29,9 @@ class PTDevicesResponse(TypedDict, total=False):
 
     body: Required[dict[str, dict[str, Any]]]
     code: Required[int]
+    # Ids of devices that were in the response but failed to parse. They are not
+    # included in body.
+    failed: set[str]
 
 
 class PTDevicesBatteryState(StrEnum):
@@ -68,7 +73,6 @@ _status_value_translations: dict[int, str] = {
 }
 
 _convert_to_number_keys: dict[str, type] = {
-    "version": int,
     "wifi_signal": int,
     "tx_signal": float,
     "percent_level": float,
@@ -79,16 +83,169 @@ _convert_to_number_keys: dict[str, type] = {
 }
 
 
+# Keys the Home Assistant integration needs to identify a device. A device missing any
+# of these fails to parse and is reported in PTDevicesResponse["failed"].
+_required_keys: tuple[str, ...] = (
+    "id",
+    "user_id",
+    "device_type",
+    "title",
+    "version",
+)
+
+
+class _ParseIssueLog:
+    """Log each parse issue at warning level once, then at debug until it is resolved.
+
+    An issue is a (device_id, key) pair, where key "*" means the whole device failed.
+    The API is polled regularly, so without this a field that is always malformed
+    would log a warning on every poll.
+    """
+
+    def __init__(self) -> None:
+        """Initialize with no active issues."""
+        self._active: set[tuple[str, str]] = set()
+        self._seen: set[tuple[str, str]] = set()
+
+    def issue(
+        self,
+        device_id: str,
+        key: str,
+        msg: str,
+        *args: Any,
+        exc_info: bool = False,
+    ) -> None:
+        """Log a parse issue, at warning level only the first time it is seen.
+
+        exc_info only adds the traceback to the first warning, not the repeats.
+        """
+        issue = (device_id, key)
+        self._seen.add(issue)
+        repeat = issue in self._active
+        LOGGER.log(
+            logging.DEBUG if repeat else logging.WARNING,
+            msg,
+            *args,
+            exc_info=exc_info and not repeat,
+        )
+
+    def end_poll(self, parsed_device_ids: Collection[str]) -> None:
+        """Finish a poll, logging issues that are resolved.
+
+        Issues for devices that are no longer in the response are dropped silently.
+        """
+        for device_id, key in sorted(self._active - self._seen):
+            if device_id in parsed_device_ids:
+                LOGGER.info(
+                    "Device %s: %s parsed successfully again",
+                    device_id,
+                    "device" if key == "*" else key,
+                )
+        self._active = self._seen
+        self._seen = set()
+
+
+# Parsing a device is kept together in one function on purpose: reading the packet top
+# to bottom is more readable than splitting it into a dozen little functions, so the
+# complexity check is disabled here.
+def _parse_device(device: dict[str, Any], log: _ParseIssueLog) -> dict[str, Any]:  # noqa: C901
+    """Parse a single flattened device.
+
+    Raises KeyError if a required key is missing.
+    """
+    for key in _required_keys:
+        if key not in device:
+            raise KeyError(key)
+
+    # Translate the device status number
+    if device.get("status_number") in _status_value_translations:
+        device["status"] = str(_status_value_translations[device["status_number"]])
+    else:
+        device["status"] = str(PTDevicesStatusStates.UNKNOWN)
+
+    # Translate the battery status number
+    if device.get("battery_status_number") is not None:
+        if device["battery_status_number"] in _battery_value_translations:
+            device["battery_status"] = str(
+                _battery_value_translations[device["battery_status_number"]]
+            )
+        else:
+            device["battery_status"] = str(
+                PTDevicesBatteryState.UNKNOWN
+            )  # TODO tests dont cover this
+
+    # Change all measurements to float | int | str
+    for key in _convert_to_number_keys:
+        if device.get(key) is not None and isinstance(device.get(key), str):
+            try:
+                device[key] = _convert_to_number_keys[key](
+                    device.get(key, "").strip(ascii_letters + "%"),
+                )
+            except ValueError:
+                # Keep the rest of the device, only this field is unknown
+                log.issue(
+                    str(device.get("device_id")),
+                    key,
+                    "Device %s: could not parse %s=%r as %s, setting it to None",
+                    device.get("device_id"),
+                    key,
+                    device[key],
+                    _convert_to_number_keys[key].__name__,
+                )
+                device[key] = None
+
+    # Pass the version through exactly as received, only making sure it is a string
+    if device["version"] is not None:
+        device["version"] = str(device["version"])
+
+    # Change the inch_level to depth_level and convert to metric (meters)
+    if "inch_level" in device:
+        inch_level = device.pop("inch_level")
+        device["depth_level"] = (
+            round(0.0254 * float(inch_level), 6) if inch_level is not None else None
+        )
+
+    if device.get("volume_level") is not None:
+        volume_factor = {"US Imperial": 3.785411784, "British Imperial": 4.54609}.get(
+            device.get("units", "")
+        )
+        if volume_factor is not None:
+            device["volume_level"] = round(
+                volume_factor * float(device["volume_level"]), 6
+            )
+
+    if device.get("probe_temperature") is not None:
+        if device.get("temperature_units", "") == "F":
+            device["probe_temperature"] = round(
+                (float(device.get("probe_temperature", 0.0)) - 32) * 0.5555555556, 3
+            )
+
+    return device
+
+
 def _format_data(
     input: list[dict[str, Any]],
-) -> dict[str, dict[str, Any]]:
-    """Format the returned data into a more helpful form. This includes putting id's as keys and flattening the dict."""
+    log: _ParseIssueLog,
+) -> tuple[dict[str, dict[str, Any]], set[str]]:
+    """Format the returned data into a more helpful form. This includes putting id's as keys and flattening the dict.
+
+    Returns the parsed devices and the ids of devices that failed to parse. Raises
+    PTDevicesParseError if the response contained devices but none of them parsed.
+    """
     output: dict[str, dict[str, Any]] = {}
 
     # Add id's as keys
-    devices: dict[str, dict[str, Any]] = {
-        device.get("device_id", ""): device for device in input
-    }
+    devices: dict[str, dict[str, Any]] = {}
+    for device in input:
+        if not device.get("device_id"):
+            log.issue(
+                f"id={device.get('id')}",
+                "device_id",
+                "Skipping device without a device_id (id=%s)",
+                device.get("id"),
+            )
+            continue
+        devices[device["device_id"]] = device
 
     # Flatten the dict
 
@@ -110,60 +267,29 @@ def _format_data(
     # At this point the data has been transformed into a flat dict
     # {"id":{...info...},"id2":{...info...}}
 
-    for device_id, device in output.items():
-        # Translate the device status number
-        if device["status_number"] in _status_value_translations.keys():
-            output[device_id]["status"] = str(
-                _status_value_translations[device["status_number"]]
+    failed: set[str] = set()
+    for device_id, device in list(output.items()):
+        try:
+            output[device_id] = _parse_device(device, log)
+        except (KeyError, ValueError, TypeError, AttributeError):
+            log.issue(
+                device_id,
+                "*",
+                "Device %s: failed to parse, skipping",
+                device_id,
+                exc_info=True,
             )
-        else:
-            output[device_id]["status"] = str(
-                PTDevicesStatusStates.UNKNOWN
-            )  # TODO tests dont cover this
+            output.pop(device_id)
+            failed.add(device_id)
 
-        # Translate the battery status number
-        if device.get("battery_status_number") is not None:
-            if device["battery_status_number"] in _battery_value_translations.keys():
-                output[device_id]["battery_status"] = str(
-                    _battery_value_translations[device["battery_status_number"]]
-                )
-            else:
-                output[device_id]["battery_status"] = str(
-                    PTDevicesBatteryState.UNKNOWN
-                )  # TODO tests dont cover this
+    log.end_poll(output.keys())
 
-        # Change all measurements to float | int | str
-        for key in _convert_to_number_keys.keys():
-            if device.get(key) is not None and isinstance(device.get(key), str):
-                output[device_id][key] = _convert_to_number_keys[key](
-                    device.get(key, "").strip(ascii_letters + "%"),
-                )
+    if input and not output:
+        raise PTDevicesParseError(
+            f"Failed to parse any of the {len(input)} device(s) in the response"
+        )
 
-        # Change the inch_level to depth_level and convert to metric (meters)
-        if device.get("inch_level") is not None:
-            output[device_id]["depth_level"] = round(
-                0.0254 * float(device.get("inch_level", 0.0)), 6
-            )
-            output[device_id].pop("inch_level")
-
-        if device.get("volume_level") is not None:
-            if device.get("units", "") == "US Imperial":
-                output[device_id]["volume_level"] = round(
-                    3.785411784 * float(device.get("volume_level", 0.0)), 6
-                )
-
-            if device.get("units", "") == "British Imperial":
-                output[device_id]["volume_level"] = round(
-                    4.54609 * float(device.get("volume_level", 0.0)), 6
-                )
-
-        if device.get("probe_temperature") is not None:
-            if device.get("temperature_units", "") == "F":
-                output[device_id]["probe_temperature"] = round(
-                    (float(device.get("probe_temperature", 0.0)) - 32) * 0.5555555556, 3
-                )
-
-    return output
+    return output, failed
 
 
 class Interface:
@@ -172,6 +298,7 @@ class Interface:
     def __init__(self, config: Configuration) -> None:
         """Initilize object variables."""
         self.config = config
+        self._parse_log = _ParseIssueLog()
 
     async def get_data(self) -> PTDevicesResponse:
         """Fetch device data from PTDevices server and format it."""
@@ -245,16 +372,25 @@ class Interface:
 
                     raw_json = await results.read()
 
-                    body = orjson.loads(raw_json)
-                    formatted_data: dict[str, dict[str, Any]] = _format_data(
-                        body["data"] if type(body["data"]) is list else [body["data"]]
+                    try:
+                        data = orjson.loads(raw_json)["data"]
+                    except (orjson.JSONDecodeError, KeyError, TypeError) as err:
+                        raise PTDevicesParseError(
+                            f"Failed to parse response from {url.split('?api_token')[0]}: {err!r}"
+                        ) from err
+
+                    formatted_data, failed = _format_data(
+                        data if type(data) is list else [data],
+                        self._parse_log,
                     )
 
                     # Store the new data to the response and return
-                    return PTDevicesResponse(code=results.status, body=formatted_data)
+                    return PTDevicesResponse(
+                        code=results.status, body=formatted_data, failed=failed
+                    )
 
-        except TimeoutError:
+        except TimeoutError as err:
             # If the request timed out, throw a request error
             raise PTDevicesRequestError(
                 f"Request to {url.split('?api_token')[0]} failed, request timed out"
-            )
+            ) from err
