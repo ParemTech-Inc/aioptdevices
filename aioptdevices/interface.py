@@ -175,10 +175,10 @@ def _parse_device(device: dict[str, Any], log: _ParseIssueLog) -> dict[str, Any]
             )  # TODO tests dont cover this
 
     # Change all measurements to float | int | str
-    for key in _convert_to_number_keys:
+    for key, cast in _convert_to_number_keys.items():
         if device.get(key) is not None and isinstance(device.get(key), str):
             try:
-                device[key] = _convert_to_number_keys[key](
+                device[key] = cast(
                     device.get(key, "").strip(ascii_letters + "%"),
                 )
             except ValueError:
@@ -190,7 +190,7 @@ def _parse_device(device: dict[str, Any], log: _ParseIssueLog) -> dict[str, Any]
                     device.get("device_id"),
                     key,
                     device[key],
-                    _convert_to_number_keys[key].__name__,
+                    cast.__name__,
                 )
                 device[key] = None
 

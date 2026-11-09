@@ -1,6 +1,6 @@
 """Library for communicating with PTDevices."""
 
-# flake8: noqa
+# ruff: noqa: F401, F403
 
 from .configuration import Configuration
 from .errors import *
