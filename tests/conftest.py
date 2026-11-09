@@ -4,24 +4,32 @@ from aiohttp import web
 import pytest
 
 from .mock_api import (
+    ALL_FAIL_PARSE_DEVICE_ID,
     API_URL,
     BAD_GATEWAY_ERROR_DEVICE_ID,
     EMPTY_ERROR_DEVICE_ID,
     FORBIDDEN_ERROR_DEVICE_ID,
+    INVALID_JSON_DEVICE_ID,
+    MISSING_DATA_DEVICE_ID,
     NORMAL_DEVICE_ID,
-    NORMAL_DEVICE_ID_US,
     NORMAL_DEVICE_ID_UK,
+    NORMAL_DEVICE_ID_US,
     NORMAL_DEVICE_MAC,
+    PARTIAL_PARSE_DEVICE_ID,
     REDIRECT_ERROR_DEVICE_ID,
     UNAUTHORIZED_ERROR_DEVICE_ID,
     WRONG_CONTENT_TYPE_DEVICE_ID,
+    all_fail_parse_response,
     bad_gateway_response,
     content_type_invalid_response,
     empty_response,
     forbidden_response,
     good_response,
-    good_response_us_imperial_conversions,
     good_response_uk_imperial_conversions,
+    good_response_us_imperial_conversions,
+    invalid_json_response,
+    missing_data_response,
+    partial_parse_response,
     redirect_response,
     unauthorized_response,
 )
@@ -66,6 +74,22 @@ def test_web_app() -> web.Application:
     app.router.add_get(
         f"{API_URL}/device/{REDIRECT_ERROR_DEVICE_ID}",
         redirect_response,
+    )  # type: ignore  # noqa: PGH003
+    app.router.add_get(
+        f"{API_URL}/device/{PARTIAL_PARSE_DEVICE_ID}",
+        partial_parse_response,
+    )  # type: ignore  # noqa: PGH003
+    app.router.add_get(
+        f"{API_URL}/device/{ALL_FAIL_PARSE_DEVICE_ID}",
+        all_fail_parse_response,
+    )  # type: ignore  # noqa: PGH003
+    app.router.add_get(
+        f"{API_URL}/device/{INVALID_JSON_DEVICE_ID}",
+        invalid_json_response,
+    )  # type: ignore  # noqa: PGH003
+    app.router.add_get(
+        f"{API_URL}/device/{MISSING_DATA_DEVICE_ID}",
+        missing_data_response,
     )  # type: ignore  # noqa: PGH003
 
     return app

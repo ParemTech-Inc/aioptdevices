@@ -19,6 +19,10 @@ UNAUTHORIZED_ERROR_DEVICE_ID: str = "401"  # Always Returns an UNAUTHORIZED (401
 REDIRECT_ERROR_DEVICE_ID: str = "302"  # Always Returns an FOUND (302)
 FORBIDDEN_ERROR_DEVICE_ID: str = "403"  # Always Returns a FORBIDDEN (403)
 BAD_GATEWAY_ERROR_DEVICE_ID: str = "502"  # Always Returns a BAD_GATEWAY (502)
+PARTIAL_PARSE_DEVICE_ID: str = "partial"  # Multiple devices, one fails to parse
+ALL_FAIL_PARSE_DEVICE_ID: str = "allfail"  # Every device fails to parse
+INVALID_JSON_DEVICE_ID: str = "badjson"  # Body is not valid JSON
+MISSING_DATA_DEVICE_ID: str = "nodata"  # Valid JSON without a "data" key
 
 # Responses
 GOOD_RESP: str = '{"data":{"id":200,"device_id":"123456789ABC","share_id":"fFAa523e","created":"Jul 11th 2024, 7:44 PM","user_id":1234,"device_type":"level","title":"Test Response Level","version":"100","lat":null,"lng":null,"address":null,"status":"Working","status_number":2,"delivery_notes":null,"units":"Metric","reported":"Jul 15th, 1:25 PM","tx_reported":"Jul 15th, 8:17 AM","last_updated_on":null,"wifi_signal":"100%","tx_signal":"-46.00dBm","device_data":{"percent_level":50,"battery_voltage":6.6,"battery_status":"Good","battery_status_number":1,"volume_level":100,"inch_level":10,"enclosure_temperature":22.2},"device_setup":{"depth":10,"power_x":30,"power_y":3048,"power_z":24,"shape":"rectangle","diameter":null,"width":null,"length":null},"temperature_units":"C"}}'
@@ -149,6 +153,20 @@ GOOD_RESP_DICT_UK_IMP: dict[str, Any] = {
     }
 }
 
+# A good device, a device with fields that fail to parse (and no status_number), a
+# device missing a required key (user_id) and an entry without a device_id
+PARTIAL_PARSE_RESP: str = (
+    '{"data":['
+    '{"id":1,"device_id":"AAAAAAAAAAAA","user_id":1234,"device_type":"level","title":"Good","version":"v1.40b","status_number":2,"units":"Metric","wifi_signal":"80%","device_data":{"percent_level":40,"inch_level":20}},'
+    '{"id":2,"device_id":"BBBBBBBBBBBB","user_id":1234,"device_type":"level","title":"Bad fields","version":208,"units":"Metric","wifi_signal":"n/a","tx_signal":"-50.00dBm","device_data":{"percent_level":"--","inch_level":"abc"}},'
+    '{"id":3,"device_id":"CCCCCCCCCCCC","device_type":"level","title":"No user","version":"100","status_number":2},'
+    '{"id":4,"user_id":1234,"device_type":"level","title":"No device id","version":"100","status_number":2}'
+    "]}"
+)
+ALL_FAIL_PARSE_RESP: str = (
+    '{"data":[{"id":3,"device_id":"CCCCCCCCCCCC","title":"No user","status_number":2}]}'
+)
+
 
 async def good_response(request: RequestInfo) -> web.Response:
     """Return an OK (200)."""
@@ -210,3 +228,29 @@ async def not_found_response(request: RequestInfo) -> web.Response:
 async def redirect_response(request: RequestInfo) -> web.Response:
     """Return a PAGE NOT FOUND (302) to any request."""
     return web.Response(status=302)
+
+
+async def partial_parse_response(request: RequestInfo) -> web.Response:
+    """Return an OK (200) where one device fails to parse."""
+    return web.Response(
+        status=200, content_type="application/json", body=PARTIAL_PARSE_RESP
+    )
+
+
+async def all_fail_parse_response(request: RequestInfo) -> web.Response:
+    """Return an OK (200) where every device fails to parse."""
+    return web.Response(
+        status=200, content_type="application/json", body=ALL_FAIL_PARSE_RESP
+    )
+
+
+async def invalid_json_response(request: RequestInfo) -> web.Response:
+    """Return an OK (200) with a body that is not JSON."""
+    return web.Response(status=200, content_type="application/json", body="not json")
+
+
+async def missing_data_response(request: RequestInfo) -> web.Response:
+    """Return an OK (200) with JSON that has no data key."""
+    return web.Response(
+        status=200, content_type="application/json", body='{"message":"oops"}'
+    )

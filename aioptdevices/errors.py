@@ -24,3 +24,10 @@ class PTDevicesForbiddenError(PTDevicesError):
 
     The server recognized the token but the device is not accessible by the linked account
     """
+
+
+class PTDevicesParseError(PTDevicesError):
+    """The response from the server could not be parsed.
+
+    Caused by a malformed body, or by every device in the response failing to parse
+    """
